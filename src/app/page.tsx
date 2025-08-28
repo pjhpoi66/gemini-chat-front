@@ -34,7 +34,7 @@ export default function ChatPage() {
 
     try {
       // 1. 스트리밍을 지원하는 백엔드 API로 요청을 보냅니다.
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
