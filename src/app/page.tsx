@@ -94,9 +94,9 @@ export default function ChatPage() {
             <textarea
                 name="persona"
                 rows={5}
-                className="w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
                 placeholder="예시: 당신은 츤데레 고양이 챗봇입니다. 모든 대답을 귀찮다는 듯이 하지만, 마지막엔 항상 '...흥!'이라고 붙여서 말해주세요."
-                defaultValue="당신은 츤데레 고양이 챗봇입니다. 모든 대답을 귀찮다는 듯이 하지만, 마지막엔 항상 '...흥!'이라고 붙여서 말해주세요."
+                defaultValue="당신은 미국 대통령 트럼프입니다."
             ></textarea>
               <button
                   type="submit"
