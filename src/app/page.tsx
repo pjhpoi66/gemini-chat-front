@@ -6,7 +6,8 @@ import { useState, useRef, useEffect } from 'react';
 
 // 채팅 메시지의 타입을 정의합니다.
 interface Message {
-  sender: 'user' | 'character';
+  // Gemini API의 역할(role)과 맞추는 것이 좋습니다.
+  role: 'user' | 'model';
   text: string;
 }
 
@@ -16,63 +17,56 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // 채팅창이 길어지면 자동으로 스크롤을 맨 아래로 내립니다.
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // 메시지 전송 함수 (스트리밍 로직으로 수정)
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInput.trim() || isLoading) return;
 
-    const userMessage: Message = { sender: 'user', text: userInput };
-    // 사용자 메시지와 캐릭터의 답변을 받을 빈 메시지를 함께 추가합니다.
-    setMessages(prev => [...prev, userMessage, { sender: 'character', text: '' }]);
+    const userMessage: Message = { role: 'user', text: userInput };
+    const newMessages = [...messages, userMessage];
+
+    setMessages([...newMessages, { role: 'model', text: '' }]);
     setUserInput('');
     setIsLoading(true);
 
     try {
-      // 1. 스트리밍을 지원하는 백엔드 API로 요청을 보냅니다.
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/stream`, {
+      // 단일 응답 API('/api/chat/simple')를 호출합니다.
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/simple`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: userInput }),
+        body: JSON.stringify({ history: newMessages }),
       });
 
-      if (!response.ok) {
-        throw new Error('서버에서 응답을 받지 못했습니다.');
-      }
+      if (!response.ok) { throw new Error('서버 응답 오류'); }
 
-      // 2. ReadableStream을 통해 데이터 읽기
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('스트림을 읽을 수 없습니다.');
-      }
+      const data = await response.json();
+      const fullText = data.response; // 완전한 문장
 
-      const decoder = new TextDecoder();
-
-      // 스트림이 끝날 때까지 계속해서 데이터를 읽습니다.
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break; // 스트림 종료
-
-        const chunk = decoder.decode(value);
-        // 받은 데이터 조각을 마지막 메시지(캐릭터 답변)에 계속 추가합니다.
-        setMessages(prev => {
-          const lastMessage = prev[prev.length - 1];
-          lastMessage.text += chunk;
-          return [...prev];
-        });
-      }
+      // 타이핑 효과를 위한 로직
+      let currentIndex = 0;
+      const interval = setInterval(() => {
+        if (currentIndex < fullText.length) {
+          setMessages(prev => {
+            const updatedMessages = [...prev];
+            updatedMessages[updatedMessages.length - 1].text = fullText.substring(0, currentIndex + 1);
+            return updatedMessages;
+          });
+          currentIndex++;
+        } else {
+          clearInterval(interval);
+          setIsLoading(false);
+        }
+      }, 50); // 50ms 마다 한 글자씩 표시 (속도 조절 가능)
 
     } catch (error) {
       console.error("API 호출 오류:", error);
-      const errorMessage: Message = { sender: 'character', text: '죄송해요, 지금은 대화할 수 없어요... 흥!' };
-      setMessages(prev => [...prev.slice(0, -1), errorMessage]); // 기존 빈 메시지를 에러 메시지로 교체
-    } finally {
+      const errorMessage: Message = { role: 'model', text: '죄송해요, 지금은 대화할 수 없어요.' };
+      setMessages(prev => [...prev.slice(0, -1), errorMessage]);
       setIsLoading(false);
     }
   };
@@ -86,19 +80,26 @@ export default function ChatPage() {
         {/* 채팅 메시지 표시 영역 */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((msg, index) => (
-              <div key={index} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {msg.sender === 'character' && <div className="w-8 h-8 rounded-full bg-pink-300 flex items-center justify-center text-lg">🐱</div>}
+              <div key={index} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-pink-300 flex items-center justify-center text-lg">🐱</div>}
                 <div className={`max-w-xs md:max-w-md p-3 rounded-2xl ${
-                    msg.sender === 'user'
+                    msg.role === 'user'
                         ? 'bg-blue-500 text-white rounded-br-none'
-                        : 'bg-white text-gray-800 rounded-bl-none'
+                        // AI가 답변 중일 때(text가 비어있을 때) 로딩 애니메이션을 보여줍니다.
+                        : msg.text ? 'bg-white text-gray-800 rounded-bl-none' : 'bg-transparent'
                 }`}>
-                  {/* 텍스트에 white-space: pre-wrap을 적용하여 줄바꿈이 올바르게 표시되도록 합니다. */}
-                  <p className="whitespace-pre-wrap">{msg.text}</p>
+                  {msg.role === 'model' && !msg.text && isLoading ? (
+                      <div className="flex space-x-1 p-2">
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                      </div>
+                  ) : (
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
+                  )}
                 </div>
               </div>
           ))}
-          {/* 로딩 인디케이터는 이제 사용하지 않습니다. */}
           <div ref={chatEndRef} />
         </div>
 
@@ -110,7 +111,7 @@ export default function ChatPage() {
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 placeholder="메시지를 입력하세요..."
-                className="flex-1 p-3 border rounded-full text-black focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="flex-1 p-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
                 disabled={isLoading}
             />
             <button
