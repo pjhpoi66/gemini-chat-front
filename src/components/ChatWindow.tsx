@@ -38,10 +38,10 @@ export default function ChatWindow({ messages, persona, isLoading, onSendMessage
   };
 
   return (
-      <div className="flex h-full flex-col bg-white">
+      <div className="flex h-full flex-col bg-white text-black">
         {/* 헤더: 페르소나 표시 */}
         <div className="border-b p-4">
-          <h2 className="text-xl font-semibold">{persona || 'Chat'}</h2>
+          <h2 className="text-xl font-semibold text-black">{persona.length > 10 ? persona.substring(0,9) : persona || 'Chat'}</h2>
         </div>
 
         {/* 메시지 목록 */}
