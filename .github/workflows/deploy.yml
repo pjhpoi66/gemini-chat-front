@@ -1,0 +1,22 @@
+name: Deploy Frontend to EC2
+
+on:
+  push:
+    branches: [ "main" ] # main 브랜치에 push될 때 실행
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EC2 instance
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/ec2-user/gemini-chat-front
+            git pull
+            npm install
+            npm run build
+            pm2 restart gemini-frontend
