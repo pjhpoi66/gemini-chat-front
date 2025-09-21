@@ -113,7 +113,7 @@ function LoginPageContent() {
           </form>
           <div className="text-sm text-center text-gray-600">
             계정이 없으신가요?{' '}
-            <Link href="/register" className="font-medium text-blue-500 hover:underline">
+            <Link href="/auth/signup" className="font-medium text-blue-500 hover:underline">
               회원가입
             </Link>
           </div>
