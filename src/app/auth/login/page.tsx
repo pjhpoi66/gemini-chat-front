@@ -77,7 +77,7 @@ function LoginPageContent() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-4 py-2 mt-2 text-base text-gray-700 bg-gray-200 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="아이디를 입력하세요"
+                  placeholder="아이디를 입력하세요."
               />
             </div>
             <div>
