@@ -2,7 +2,7 @@
 
 Google의 Gemini API를 활용하여 사용자가 지정한 페르소나를 가진 AI 캐릭터와 대화할 수 있는 웹 애플리케이션의 프론트엔드 프로젝트입니다.
 
-https://joonghopark-gemchat.com
+https://minga666.com
 
 ## 주요 기능
 
